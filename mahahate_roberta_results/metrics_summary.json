@@ -1,0 +1,25 @@
+{
+  "model": "l3cube-pune/mahahate-multi-roberta",
+  "approach": "fine-tuning pretrained four-class MahaHate RoBERTa",
+  "label_mapping": {
+    "HATE": 0,
+    "OFFN": 1,
+    "PRFN": 2,
+    "NOT": 3
+  },
+  "best_epoch": 4,
+  "best_validation_macro_f1": 0.7458541758063542,
+  "test_accuracy": 0.8695652173913043,
+  "test_macro_f1": 0.7697832885751638,
+  "test_loss": 0.5343807711520857,
+  "train_rows": 7189,
+  "validation_rows": 1541,
+  "test_rows": 1541,
+  "max_length": 128,
+  "batch_size": 2,
+  "gradient_accumulation_steps": 8,
+  "learning_rate": 2e-05,
+  "seed": 42,
+  "elapsed_minutes": 31.3,
+  "warning": "Metrics apply to this labelled subset. Lexicon-based sampling can bias results; do not assume generalization to all YouTube comments."
+}

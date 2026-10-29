@@ -1,0 +1,38 @@
+{
+  "source_file": "Baseline_file.xlsx",
+  "source_rows": 30000,
+  "valid_labelled_rows_before_empty_text_filter": 10272,
+  "valid_labelled_rows_used": 10271,
+  "empty_text_rows_excluded": 1,
+  "ambiguous_rows_excluded": 3,
+  "unlabelled_rows_excluded": 19725,
+  "train_rows": 7189,
+  "validation_rows": 1541,
+  "test_rows": 1541,
+  "split_method": "Stratified random split, random_state=42, 70/15/15",
+  "limitation": "Source workbook has no video_id, so group-by-video split could not be performed. Check for near-duplicate comments across splits before final paper results.",
+  "class_counts_all_labelled": {
+    "HATE": 1090,
+    "NOT": 6975,
+    "OFFN": 1854,
+    "PRFN": 352
+  },
+  "class_counts_train": {
+    "HATE": 763,
+    "NOT": 4882,
+    "OFFN": 1298,
+    "PRFN": 246
+  },
+  "class_counts_validation": {
+    "HATE": 163,
+    "NOT": 1047,
+    "OFFN": 278,
+    "PRFN": 53
+  },
+  "class_counts_test": {
+    "HATE": 164,
+    "NOT": 1046,
+    "OFFN": 278,
+    "PRFN": 53
+  }
+}

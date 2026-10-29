@@ -1,0 +1,97 @@
+# ==============================================================================
+# Git Ignore for TE_training_data_prep (Machine Learning / NLP Project)
+# ==============================================================================
+
+# ---------------------------------------------------------
+# Python Bytecode & Cache
+# ---------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------
+# Virtual Environments
+# ---------------------------------------------------------
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ---------------------------------------------------------
+# Large Model Weights & Checkpoints (>100MB exceeds GitHub limits)
+# ---------------------------------------------------------
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+*.h5
+*.tflite
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# Serialized model pipelines & pickle dumps
+*.joblib
+*.pkl
+*.pickle
+
+# Hugging Face & PyTorch training cache
+.cache/
+checkpoints/
+checkpoint-*/
+
+# ---------------------------------------------------------
+# Logs, Experiment Tracking & Profiling
+# ---------------------------------------------------------
+*.log
+runs/
+wandb/
+.tensorboard/
+
+# ---------------------------------------------------------
+# Environment Variables & Secrets
+# ---------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------------------------------------------------------
+# IDEs & Code Editors
+# ---------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ---------------------------------------------------------
+# Operating System Artifacts
+# ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# ---------------------------------------------------------
+# Temporary & Lock Files (Excel / Office / Temp)
+# ---------------------------------------------------------
+~$*.xlsx
+~$*.xls
+~$*.csv
+*.tmp
+*.temp
+

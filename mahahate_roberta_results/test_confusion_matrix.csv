@@ -1,0 +1,5 @@
+,predicted_HATE,predicted_OFFN,predicted_PRFN,predicted_NOT
+actual_HATE,105,10,1,48
+actual_OFFN,13,219,1,45
+actual_PRFN,4,9,29,11
+actual_NOT,25,33,1,987

@@ -1,0 +1,10 @@
+              precision    recall  f1-score   support
+
+         NOT       0.86      0.96      0.91      1046
+        PRFN       0.86      0.34      0.49        53
+        OFFN       0.82      0.74      0.78       278
+        HATE       0.63      0.41      0.49       164
+
+    accuracy                           0.84      1541
+   macro avg       0.79      0.61      0.67      1541
+weighted avg       0.83      0.84      0.83      1541
