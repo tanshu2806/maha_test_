@@ -1,0 +1,5 @@
+# Lightweight baseline, inference, and prediction-comparison dependencies.
+pandas
+scikit-learn
+joblib
+numpy
