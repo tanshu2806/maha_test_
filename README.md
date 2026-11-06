@@ -232,7 +232,7 @@ python train_svm_baseline.py --data-dir dataset --outdir svm_baseline_results --
 ```
 
 Available arguments:
-- `--data-dir`: Directory containing `train.csv`, `validation.csv`, and `test.csv` (default: `dataset` or `TE_training_data_prep`).
+- `--data-dir`: Directory containing `train.csv`, `validation.csv`, and `test.csv` (default: `dataset`).
 - `--train`, `--validation`, `--test`: Explicit individual paths to CSV splits.
 - `--outdir`: Directory to store models, predictions, and reports (default: `svm_baseline_results`).
 - `--c-values`: Comma-separated float regularization strengths.
