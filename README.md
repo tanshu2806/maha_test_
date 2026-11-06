@@ -21,6 +21,7 @@
 - [Usage Guide](#usage-guide)
   - [Running the SVM Baseline](#running-the-svm-baseline)
   - [Fine-Tuning MahaHate RoBERTa](#fine-tuning-mahahate-roberta)
+  - [Compare Saved Predictions & Inspect Errors](#compare-saved-predictions--inspect-errors)
   - [Quick Inference Snippet](#quick-inference-snippet)
 - [Academic Notes & Limitations](#academic-notes--limitations)
 
@@ -45,6 +46,9 @@ Key deliverables in this directory include:
 TE_training_data_prep/
 ├── README.md                                      # Project documentation (this file)
 ├── README.txt                                     # Summary notes from the initial dataset preparation
+├── requirements.txt                              # Lightweight baseline and analysis dependencies
+├── requirements-roberta.txt                      # Optional transformer training dependencies
+├── compare_predictions.py                        # Aggregate SVM/RoBERTa comparison and error analysis
 ├── dataset_split_summary.json                     # JSON record of split sizes, percentages, and class distributions
 │
 ├── dataset/                                       # Official stratified experimental splits
@@ -200,20 +204,22 @@ weighted avg       0.87      0.87      0.87      1541
 
 ## 🛠 Installation & Setup
 
-Ensure Python 3.9+ is installed. A CUDA-capable GPU is recommended for fine-tuning or re-evaluating the transformer model.
+Use Python 3.9+ and create a virtual environment before installing packages.
 
 ```powershell
-# 1. Create and activate a virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# 2. Upgrade pip
+.\\.venv\\Scripts\\Activate.ps1
 python -m pip install --upgrade pip
-
-# 3. Install core dependencies
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121  # or standard CPU wheel
-pip install transformers scikit-learn pandas numpy joblib accelerate
+pip install -r requirements.txt
 ```
+
+The lightweight dependencies are enough for the SVM baseline and prediction comparison. For RoBERTa fine-tuning, install the optional dependencies:
+
+```powershell
+pip install -r requirements-roberta.txt
+```
+
+The optional file includes PyTorch. If you need a specific CUDA build, install the matching PyTorch build for your machine first, then install the remaining packages. CPU training is supported but can take substantially longer.
 
 ---
 
@@ -246,6 +252,19 @@ python train_mahahate_roberta.py `
 ```
 
 Outputs are automatically saved to `mahahate_roberta_results/`, including the serialized best checkpoint under `best_model/`.
+
+### Compare Saved Predictions & Inspect Errors
+
+After running both model scripts on the same ordered `dataset/test.csv`, compare their saved predictions:
+
+```powershell
+python compare_predictions.py `
+  --svm svm_baseline_results/test_predictions.csv `
+  --roberta mahahate_roberta_results/test_predictions.csv `
+  --json-out comparison_results/summary.json
+```
+
+The command checks that both files contain the same test comments and actual labels in the same order. It reports accuracy, macro-F1, per-class precision/recall/F1, common misclassification pairs, and which model alone got each row correct. Optional JSON output contains aggregate metrics only; it does not include comment text. Results describe this labelled test split and should not be treated as deployment performance.
 
 ### Quick Inference Snippet
 
