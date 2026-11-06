@@ -1,0 +1,5 @@
+# Optional transformer fine-tuning dependencies.
+-r requirements.txt
+torch
+transformers
+accelerate
