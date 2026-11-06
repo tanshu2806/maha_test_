@@ -8,7 +8,7 @@ Expected CSV columns:
 Default folder layout:
     project_folder/
       train_svm_baseline.py
-      TE_training_data_prep/
+      dataset/
         train.csv
         validation.csv
         test.csv
@@ -24,6 +24,7 @@ YouTube comments.
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 import joblib
@@ -112,7 +113,7 @@ def make_pipeline(c_value: float) -> Pipeline:
 
 def main():
     parser = argparse.ArgumentParser(description="Train/evaluate TF-IDF + Linear SVM.")
-    parser.add_argument("--data-dir", default="TE_training_data_prep",
+    parser.add_argument("--data-dir", default="dataset",
                         help="Folder containing train.csv, validation.csv, test.csv.")
     parser.add_argument("--train", default=None, help="Optional explicit train CSV path.")
     parser.add_argument("--validation", default=None, help="Optional explicit validation CSV path.")
@@ -141,6 +142,8 @@ def main():
     c_values = [float(x.strip()) for x in args.c_values.split(",") if x.strip()]
     if not c_values:
         raise ValueError("No valid C values supplied.")
+    if any(not math.isfinite(value) or value <= 0 for value in c_values):
+        raise ValueError("Every C value must be a finite number greater than zero.")
 
     print("=" * 68)
     print("TF-IDF + LINEAR SVM BASELINE")
