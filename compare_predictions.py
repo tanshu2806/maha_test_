@@ -90,6 +90,11 @@ def main():
     parser.add_argument("--svm", type=Path, default=Path("svm_baseline_results/test_predictions.csv"))
     parser.add_argument("--roberta", type=Path, default=Path("mahahate_roberta_results/test_predictions.csv"))
     parser.add_argument("--json-out", type=Path, help="Optional path for aggregate-only JSON output.")
+    parser.add_argument(
+        "--errors-out",
+        type=Path,
+        help="Optional CSV of misclassified row numbers and labels; comment text is never written.",
+    )
     args = parser.parse_args()
 
     svm_rows = load_predictions(
@@ -178,6 +183,34 @@ def main():
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(f"\nAggregate report saved to {args.json_out}")
+
+    if args.errors_out:
+        args.errors_out.parent.mkdir(parents=True, exist_ok=True)
+        with args.errors_out.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow([
+                "prediction_row",
+                "actual_label",
+                "svm_prediction",
+                "roberta_prediction",
+                "svm_correct",
+                "roberta_correct",
+                "models_disagree",
+            ])
+            for row_number, (truth, svm, roberta) in enumerate(aligned, start=1):
+                svm_correct = svm == truth
+                roberta_correct = roberta == truth
+                if not svm_correct or not roberta_correct:
+                    writer.writerow([
+                        row_number,
+                        truth,
+                        svm,
+                        roberta,
+                        svm_correct,
+                        roberta_correct,
+                        svm != roberta,
+                    ])
+        print(f"Misclassified row index saved to {args.errors_out} (comment text omitted).")
 
 
 if __name__ == "__main__":
