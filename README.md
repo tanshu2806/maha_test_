@@ -22,6 +22,7 @@
   - [Running the SVM Baseline](#running-the-svm-baseline)
   - [Fine-Tuning MahaHate RoBERTa](#fine-tuning-mahahate-roberta)
   - [Compare Saved Predictions & Inspect Errors](#compare-saved-predictions--inspect-errors)
+  - [Audit Split Overlap](#audit-split-overlap)
   - [Quick Inference Snippet](#quick-inference-snippet)
 - [Academic Notes & Limitations](#academic-notes--limitations)
 
@@ -49,6 +50,7 @@ TE_training_data_prep/
 ├── requirements.txt                              # Lightweight baseline and analysis dependencies
 ├── requirements-roberta.txt                      # Optional transformer training dependencies
 ├── compare_predictions.py                        # Aggregate SVM/RoBERTa comparison and error analysis
+├── audit_splits.py                               # Aggregate duplicate-overlap audit across splits
 ├── dataset_split_summary.json                     # JSON record of split sizes, percentages, and class distributions
 │
 ├── dataset/                                       # Official stratified experimental splits
@@ -261,10 +263,21 @@ After running both model scripts on the same ordered `dataset/test.csv`, compare
 python compare_predictions.py `
   --svm svm_baseline_results/test_predictions.csv `
   --roberta mahahate_roberta_results/test_predictions.csv `
-  --json-out comparison_results/summary.json
+  --json-out comparison_results/summary.json `
+  --errors-out comparison_results/misclassified_rows.csv
 ```
 
-The command checks that both files contain the same test comments and actual labels in the same order. It reports accuracy, macro-F1, per-class precision/recall/F1, common misclassification pairs, and which model alone got each row correct. Optional JSON output contains aggregate metrics only; it does not include comment text. Results describe this labelled test split and should not be treated as deployment performance.
+The command verifies that both files contain the same test comments and labels in the same order. It reports accuracy, macro-F1, per-class scores, confusion matrices, common error pairs, and model-only correct counts. The optional JSON contains aggregate metrics only. The optional error index contains 1-based prediction row numbers and labels but no comment text; use the same ordered test split to inspect those rows locally. Results describe this labelled split, not deployment performance.
+
+### Audit Split Overlap
+
+Check whether normalized comments appear more than once within a split or across train, validation, and test:
+
+```powershell
+python audit_splits.py --json-out audit_results/split_audit.json
+```
+
+The report includes row and class counts, within-split duplicate groups, cross-split overlap groups, and label-set differences. It normalizes Unicode with NFKC, folds case, and collapses whitespace. It prints and saves aggregate counts only; it never includes comment text. A match is a signal to review split construction, not proof that rows came from the same source.
 
 ### Quick Inference Snippet
 
