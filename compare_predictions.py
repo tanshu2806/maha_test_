@@ -65,8 +65,10 @@ def score(rows):
 
     accuracy = sum(truth == prediction for truth, prediction in rows) / len(rows)
     macro_f1 = sum(results[label]["f1"] for label in LABELS) / len(LABELS)
+    matrix = {truth: {prediction: 0 for prediction in LABELS} for truth in LABELS}
     errors = {}
     for truth, prediction in rows:
+        matrix[truth][prediction] += 1
         if truth != prediction:
             pair = f"{truth} -> {prediction}"
             errors[pair] = errors.get(pair, 0) + 1
@@ -76,6 +78,7 @@ def score(rows):
         "accuracy": accuracy,
         "macro_f1": macro_f1,
         "per_class": results,
+        "confusion_matrix": matrix,
         "misclassification_pairs": errors,
     }
 
@@ -129,6 +132,8 @@ def main():
             "svm_only_correct": svm_only,
             "roberta_only_correct": roberta_only,
             "both_wrong": both_wrong,
+            "accuracy_delta_roberta_minus_svm": roberta_scored["accuracy"] - svm_scored["accuracy"],
+            "macro_f1_delta_roberta_minus_svm": roberta_scored["macro_f1"] - svm_scored["macro_f1"],
         },
         "note": "Metrics describe these saved predictions on this labelled split only.",
     }
@@ -147,6 +152,13 @@ def main():
             f"RoBERTa {roberta_class['f1']:.3f} "
             f"({roberta_class['precision']:.3f}/{roberta_class['recall']:.3f})"
         )
+
+    for name, results in (("SVM", svm_scored), ("RoBERTa", roberta_scored)):
+        print(f"\n{name} confusion matrix (rows=actual, columns=predicted)")
+        print("actual\\pred " + " ".join(f"{label:>6}" for label in LABELS))
+        for actual in LABELS:
+            counts = results["confusion_matrix"][actual]
+            print(f"{actual:>10} " + " ".join(f"{counts[label]:>6}" for label in LABELS))
 
     print("\nPrediction comparison")
     print(f"Same prediction: {same_prediction}")
