@@ -32,6 +32,8 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.svm import LinearSVC
+from experiment_provenance import build_experiment_provenance
+
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -219,6 +221,11 @@ def main():
 
     summary = {
         "model": "TF-IDF word (1,2) + character (2,5) n-grams + LinearSVC",
+        "experiment_provenance": build_experiment_provenance(
+            {"train": train_path, "validation": val_path, "test": test_path},
+            {"train": len(train_df), "validation": len(val_df), "test": len(test_df)},
+            ["numpy", "pandas", "scikit-learn", "joblib"],
+        ),
         "selected_C": best_c,
         "training_rows": int(len(train_df)),
         "validation_rows": int(len(val_df)),

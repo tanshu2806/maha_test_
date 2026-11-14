@@ -20,6 +20,8 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, get_linear_schedule_with_warmup
 
+from experiment_provenance import build_experiment_provenance
+
 MODEL_NAME = "l3cube-pune/mahahate-multi-roberta"
 LABELS = ["HATE", "OFFN", "PRFN", "NOT"]
 LABEL2ID = {label: i for i, label in enumerate(LABELS)}
@@ -218,6 +220,15 @@ def main():
     (out_dir / "test_classification_report.json").write_text(json.dumps(report_dict, indent=2, ensure_ascii=False), encoding="utf-8")
     summary = {
         "model": args.model_name,
+        "experiment_provenance": build_experiment_provenance(
+            {
+                "train": data_dir / "train.csv",
+                "validation": data_dir / "validation.csv",
+                "test": data_dir / "test.csv",
+            },
+            {"train": len(train_df), "validation": len(val_df), "test": len(test_df)},
+            ["numpy", "pandas", "scikit-learn", "torch", "transformers", "accelerate"],
+        ),
         "approach": "fine-tuning pretrained four-class MahaHate RoBERTa",
         "label_mapping": LABEL2ID,
         "best_epoch": best_epoch,
