@@ -274,10 +274,29 @@ The command verifies that both files contain the same test comments and labels i
 Check whether normalized comments appear more than once within a split or across train, validation, and test:
 
 ```powershell
-python audit_splits.py --json-out audit_results/split_audit.json
+python audit_splits.py `
+  --json-out audit_results/split_audit.json `
+  --overlap-out audit_results/overlap_rows.csv
 ```
 
-The report includes row and class counts, within-split duplicate groups, cross-split overlap groups, and label-set differences. It normalizes Unicode with NFKC, folds case, and collapses whitespace. It prints and saves aggregate counts only; it never includes comment text. A match is a signal to review split construction, not proof that rows came from the same source.
+The JSON report includes row and class counts, within-split duplicate groups, cross-split overlap groups, and label-set differences. The optional CSV maps matching groups to 1-based row positions and labels in each split, so you can review the source rows locally. Neither output includes comment text. The audit normalizes Unicode with NFKC, folds case, and collapses whitespace. A match is a signal to review split construction, not proof that rows came from the same source.
+
+### Try a Saved Model on One Comment
+
+Train the SVM, RoBERTa, or both models first. The RoBERTa run requires the optional dependencies and a saved local checkpoint. Then run an interactive prompt (default: both models):
+
+```powershell
+python predict_comment.py
+```
+
+Or pass a comment directly and choose one model:
+
+```powershell
+python predict_comment.py --model svm --text "हा व्हिडिओ खूप चांगला आहे"
+python predict_comment.py --model roberta --text "हा व्हिडिओ खूप चांगला आहे" --device cpu
+```
+
+The tool prints predicted labels only; it does not produce calibrated confidence scores. If the models disagree, treat that as a cue for human review, not a resolution. Text passed on the command line may be retained in your shell history, so use the interactive prompt for sensitive examples.
 
 ### Quick Inference Snippet
 
