@@ -52,7 +52,9 @@ def read_split(name, path):
                 blank_text_rows += 1
                 continue
             key = normalize_comment(text)
-            comments.setdefault(key, Counter())[label] += 1
+            entry = comments.setdefault(key, {"labels": Counter(), "rows": []})
+            entry["labels"][label] += 1
+            entry["rows"].append({"row": total_rows, "label": label})
             label_counts[label] += 1
 
     return {
@@ -66,10 +68,10 @@ def read_split(name, path):
 
 def summarize_duplicates(split):
     comments = split["comments"]
-    groups = [labels for labels in comments.values() if sum(labels.values()) > 1]
+    groups = [entry for entry in comments.values() if len(entry["rows"]) > 1]
     return {
         "duplicate_groups": len(groups),
-        "rows_beyond_first_copy": sum(sum(labels.values()) - 1 for labels in groups),
+        "rows_beyond_first_copy": sum(len(entry["rows"]) - 1 for entry in groups),
     }
 
 
@@ -78,15 +80,45 @@ def summarize_overlap(left_name, left, right_name, right):
     right_comments = right["comments"]
     shared = left_comments.keys() & right_comments.keys()
     label_set_differences = sum(
-        set(left_comments[text]) != set(right_comments[text]) for text in shared
+        set(left_comments[text]["labels"]) != set(right_comments[text]["labels"])
+        for text in shared
     )
     return {
         "splits": [left_name, right_name],
         "shared_normalized_comment_groups": len(shared),
-        "left_rows_in_shared_groups": sum(sum(left_comments[text].values()) for text in shared),
-        "right_rows_in_shared_groups": sum(sum(right_comments[text].values()) for text in shared),
+        "left_rows_in_shared_groups": sum(len(left_comments[text]["rows"]) for text in shared),
+        "right_rows_in_shared_groups": sum(len(right_comments[text]["rows"]) for text in shared),
         "groups_with_different_label_sets": label_set_differences,
     }
+
+
+def write_overlap_index(path, splits):
+    """Write row positions and labels for cross-split duplicates, never comment text."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow([
+            "left_split", "left_rows", "left_labels",
+            "right_split", "right_rows", "right_labels",
+            "label_sets_match",
+        ])
+        for left_name, right_name in combinations(splits, 2):
+            left_comments = splits[left_name]["comments"]
+            right_comments = splits[right_name]["comments"]
+            for key in sorted(left_comments.keys() & right_comments.keys()):
+                left_rows = left_comments[key]["rows"]
+                right_rows = right_comments[key]["rows"]
+                left_labels = sorted(left_comments[key]["labels"])
+                right_labels = sorted(right_comments[key]["labels"])
+                writer.writerow([
+                    left_name,
+                    ";".join(str(record["row"]) for record in left_rows),
+                    ";".join(record["label"] for record in left_rows),
+                    right_name,
+                    ";".join(str(record["row"]) for record in right_rows),
+                    ";".join(record["label"] for record in right_rows),
+                    set(left_labels) == set(right_labels),
+                ])
 
 
 def main():
@@ -97,6 +129,11 @@ def main():
     parser.add_argument("--validation", type=Path, default=Path("dataset/validation.csv"))
     parser.add_argument("--test", type=Path, default=Path("dataset/test.csv"))
     parser.add_argument("--json-out", type=Path, help="Optional path for aggregate-only JSON output.")
+    parser.add_argument(
+        "--overlap-out",
+        type=Path,
+        help="Optional CSV of matching split row numbers and labels; comment text is omitted.",
+    )
     args = parser.parse_args()
 
     paths = {
@@ -147,6 +184,10 @@ def main():
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(f"\nAggregate report saved to {args.json_out}")
+
+    if args.overlap_out:
+        write_overlap_index(args.overlap_out, splits)
+        print(f"\nText-free overlap row index saved to {args.overlap_out}")
 
 
 if __name__ == "__main__":
