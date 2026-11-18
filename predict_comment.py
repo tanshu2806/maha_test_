@@ -18,8 +18,8 @@ def load_svm(model_path):
     return joblib.load(model_path)
 
 
-def predict_svm(model, text):
-    return str(model.predict([text])[0])
+def predict_svm(model, texts):
+    return [str(label) for label in model.predict(texts)]
 
 
 def load_roberta(model_path, device_name):
@@ -42,29 +42,31 @@ def load_roberta(model_path, device_name):
     return torch, tokenizer, model, device
 
 
-def predict_roberta(components, text):
+def predict_roberta(components, texts):
     torch, tokenizer, model, device = components
-    encoded = tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
+    encoded = tokenizer(
+        texts, return_tensors="pt", truncation=True, max_length=128, padding=True
+    )
     encoded = {name: value.to(device) for name, value in encoded.items()}
     with torch.no_grad():
-        predicted_id = int(model(**encoded).logits.argmax(dim=-1).item())
-    if predicted_id < 0 or predicted_id >= len(LABELS):
-        raise ValueError(f"Model returned an unexpected class id: {predicted_id}")
-    return LABELS[predicted_id]
+        predicted_ids = model(**encoded).logits.argmax(dim=-1).tolist()
+    if any(predicted_id < 0 or predicted_id >= len(LABELS) for predicted_id in predicted_ids):
+        raise ValueError("Model returned an unexpected class id.")
+    return [LABELS[predicted_id] for predicted_id in predicted_ids]
 
 
 def build_predictors(args):
     predictors = {}
     if args.model in ("svm", "both"):
         svm_model = load_svm(args.svm_model)
-        predictors["svm_prediction"] = lambda text: predict_svm(svm_model, text)
+        predictors["svm_prediction"] = lambda texts: predict_svm(svm_model, texts)
     if args.model in ("roberta", "both"):
         roberta = load_roberta(args.roberta_model, args.device)
-        predictors["roberta_prediction"] = lambda text: predict_roberta(roberta, text)
+        predictors["roberta_prediction"] = lambda texts: predict_roberta(roberta, texts)
     return predictors
 
 
-def predict_csv(input_path, output_path, text_column, predictors):
+def predict_csv(input_path, output_path, text_column, predictors, batch_size):
     input_path = input_path.resolve()
     output_path = output_path.resolve()
     if input_path == output_path:
@@ -94,11 +96,19 @@ def predict_csv(input_path, output_path, text_column, predictors):
         fieldnames = ["prediction_row", *predictors]
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        for row_number, text in rows:
-            writer.writerow({
-                "prediction_row": row_number,
-                **{name: predict(text) for name, predict in predictors.items()},
-            })
+        for offset in range(0, len(rows), batch_size):
+            batch = rows[offset:offset + batch_size]
+            texts = [text for _, text in batch]
+            batch_predictions = {
+                name: predict(texts) for name, predict in predictors.items()
+            }
+            if any(len(labels) != len(batch) for labels in batch_predictions.values()):
+                raise ValueError("A model returned a different number of predictions than input rows.")
+            for index, (row_number, _) in enumerate(batch):
+                writer.writerow({
+                    "prediction_row": row_number,
+                    **{name: labels[index] for name, labels in batch_predictions.items()},
+                })
     print(f"Predictions for {len(rows)} rows saved to {output_path} (comment text omitted).")
 
 
@@ -111,6 +121,7 @@ def main():
     parser.add_argument("--input-csv", type=Path, help="Optional CSV containing comments for batch prediction.")
     parser.add_argument("--output-csv", type=Path, help="Label-only CSV output for --input-csv.")
     parser.add_argument("--text-column", default="comment_text", help="Input CSV text column.")
+    parser.add_argument("--batch-size", type=int, default=8, help="Rows processed per inference batch.")
     parser.add_argument(
         "--svm-model",
         type=Path,
@@ -124,6 +135,8 @@ def main():
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     args = parser.parse_args()
 
+    if args.batch_size < 1:
+        parser.error("--batch-size must be at least 1.")
     if bool(args.input_csv) != bool(args.output_csv):
         parser.error("--input-csv and --output-csv must be supplied together.")
     if args.input_csv and args.text is not None:
@@ -131,14 +144,14 @@ def main():
 
     predictors = build_predictors(args)
     if args.input_csv:
-        predict_csv(args.input_csv, args.output_csv, args.text_column, predictors)
+        predict_csv(args.input_csv, args.output_csv, args.text_column, predictors, args.batch_size)
         return
 
     text = args.text if args.text is not None else input("Marathi comment: ")
     if not text.strip():
         parser.error("Comment text must not be blank.")
 
-    predictions = {name: predict(text) for name, predict in predictors.items()}
+    predictions = {name: predict([text])[0] for name, predict in predictors.items()}
     for name, label in predictions.items():
         print(f"{name.removesuffix('_prediction').upper()}: {label}")
     if len(predictions) == 2 and len(set(predictions.values())) > 1:
