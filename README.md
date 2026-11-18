@@ -298,6 +298,19 @@ python predict_comment.py --model roberta --text "हा व्हिडिओ �
 
 The tool prints predicted labels only; it does not produce calibrated confidence scores. If the models disagree, treat that as a cue for human review, not a resolution. Text passed on the command line may be retained in your shell history, so use the interactive prompt for sensitive examples.
 
+For a local CSV, write a label-only output that maps each prediction back to its 1-based data row (the comment text is not copied):
+
+```powershell
+python predict_comment.py `
+  --model both `
+  --input-csv my_comments.csv `
+  --output-csv predictions.csv `
+  --text-column comment_text `
+  --batch-size 8
+```
+
+Use `--model svm` or `--model roberta` to run only one model. RoBERTa batching uses the selected device; lower `--batch-size` if memory is limited. Keep the original CSV in the same row order when reviewing prediction row numbers.
+
 ### Quick Inference Snippet
 
 #### Loading the Trained SVM Pipeline
