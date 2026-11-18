@@ -3,6 +3,8 @@
 
 import argparse
 import csv
+import os
+import tempfile
 from pathlib import Path
 
 LABELS = ["HATE", "OFFN", "PRFN", "NOT"]
@@ -92,23 +94,39 @@ def predict_csv(input_path, output_path, text_column, predictors, batch_size):
         raise ValueError(f"No comment rows found in {input_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8", newline="") as handle:
-        fieldnames = ["prediction_row", *predictors]
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        for offset in range(0, len(rows), batch_size):
-            batch = rows[offset:offset + batch_size]
-            texts = [text for _, text in batch]
-            batch_predictions = {
-                name: predict(texts) for name, predict in predictors.items()
-            }
-            if any(len(labels) != len(batch) for labels in batch_predictions.values()):
-                raise ValueError("A model returned a different number of predictions than input rows.")
-            for index, (row_number, _) in enumerate(batch):
-                writer.writerow({
-                    "prediction_row": row_number,
-                    **{name: labels[index] for name, labels in batch_predictions.items()},
-                })
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            dir=output_path.parent,
+            prefix=f".{output_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = Path(handle.name)
+            fieldnames = ["prediction_row", *predictors]
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            for offset in range(0, len(rows), batch_size):
+                batch = rows[offset:offset + batch_size]
+                texts = [text for _, text in batch]
+                batch_predictions = {
+                    name: predict(texts) for name, predict in predictors.items()
+                }
+                if any(len(labels) != len(batch) for labels in batch_predictions.values()):
+                    raise ValueError("A model returned a different number of predictions than input rows.")
+                for index, (row_number, _) in enumerate(batch):
+                    writer.writerow({
+                        "prediction_row": row_number,
+                        **{name: labels[index] for name, labels in batch_predictions.items()},
+                    })
+        os.replace(temp_path, output_path)
+    except Exception:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+        raise
     print(f"Predictions for {len(rows)} rows saved to {output_path} (comment text omitted).")
 
 
