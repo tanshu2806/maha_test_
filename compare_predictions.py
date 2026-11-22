@@ -97,6 +97,17 @@ def main():
     )
     args = parser.parse_args()
 
+    input_paths = {args.svm.resolve(), args.roberta.resolve()}
+    output_paths = [
+        path.resolve()
+        for path in (args.json_out, args.errors_out)
+        if path is not None
+    ]
+    if len(set(output_paths)) != len(output_paths) or any(
+        output_path in input_paths for output_path in output_paths
+    ):
+        parser.error("Output paths must be distinct from each other and from both input prediction files.")
+
     svm_rows = load_predictions(
         args.svm,
         ["final_category", "actual_label"],
