@@ -267,7 +267,7 @@ python compare_predictions.py `
   --errors-out comparison_results/misclassified_rows.csv
 ```
 
-The command verifies that both files contain the same test comments and labels in the same order. It reports accuracy, macro-F1, per-class scores, confusion matrices, common error pairs, and model-only correct counts. The optional JSON contains aggregate metrics only. The optional error index contains 1-based prediction row numbers and labels but no comment text; use the same ordered test split to inspect those rows locally. Results describe this labelled split, not deployment performance.
+The command verifies that both files contain the same test comments and labels in the same order. It reports accuracy, macro-F1, per-class scores, confusion matrices, common error pairs, and model-only correct counts. The optional JSON contains aggregate metrics only. The optional error index contains 1-based prediction row numbers and labels but no comment text; use the same ordered test split to inspect those rows locally. Results describe this labelled split, not deployment performance. CSV headers are trimmed and duplicate names after trimming are rejected. Report paths must be distinct from the prediction inputs and from each other, preventing accidental replacement of source files.
 
 ### Audit Split Overlap
 
@@ -279,7 +279,7 @@ python audit_splits.py `
   --overlap-out audit_results/overlap_rows.csv
 ```
 
-The JSON report includes row and class counts, within-split duplicate groups, cross-split overlap groups, and label-set differences. The optional CSV maps matching groups to 1-based row positions and labels in each split, so you can review the source rows locally. Neither output includes comment text. The audit normalizes Unicode with NFKC, folds case, and collapses whitespace. A match is a signal to review split construction, not proof that rows came from the same source.
+The JSON report includes row and class counts, within-split duplicate groups, cross-split overlap groups, and label-set differences. The optional CSV maps matching groups to 1-based row positions and labels in each split, so you can review the source rows locally. Neither output includes comment text. The audit normalizes Unicode with NFKC, folds case, and collapses whitespace. A match is a signal to review split construction, not proof that rows came from the same source. Input headers are trimmed and duplicate names after trimming are rejected. JSON and overlap report destinations must be distinct from all split inputs and from each other.
 
 ### Try a Saved Model on One Comment
 
