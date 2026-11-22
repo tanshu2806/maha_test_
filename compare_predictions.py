@@ -18,6 +18,10 @@ def load_predictions(path: Path, truth_columns, prediction_columns):
         if not reader.fieldnames:
             raise ValueError(f"No CSV header found in {path}")
 
+        reader.fieldnames = [column.strip() for column in reader.fieldnames]
+        if len(set(reader.fieldnames)) != len(reader.fieldnames):
+            raise ValueError(f"Duplicate column names after trimming whitespace in {path}")
+
         def find_column(candidates):
             return next((column for column in candidates if column in reader.fieldnames), None)
 
