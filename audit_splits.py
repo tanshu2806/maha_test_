@@ -42,6 +42,8 @@ def read_split(name, path):
 
         # Normalize header whitespace while keeping the original row values.
         reader.fieldnames = [column.strip() for column in reader.fieldnames]
+        if len(set(reader.fieldnames)) != len(reader.fieldnames):
+            raise ValueError(f"Duplicate column names after trimming whitespace in {path}")
         for line_number, row in enumerate(reader, start=2):
             total_rows += 1
             text = (row.get("comment_text") or "").strip()
