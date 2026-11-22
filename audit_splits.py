@@ -141,6 +141,17 @@ def main():
         "validation": args.validation,
         "test": args.test,
     }
+    input_paths = {path.resolve() for path in paths.values()}
+    output_paths = [
+        output.resolve()
+        for output in (args.json_out, args.overlap_out)
+        if output is not None
+    ]
+    if len(set(output_paths)) != len(output_paths) or any(
+        output_path in input_paths for output_path in output_paths
+    ):
+        parser.error("Output paths must be distinct from each other and from all split inputs.")
+
     splits = {name: read_split(name, path) for name, path in paths.items()}
 
     report = {
