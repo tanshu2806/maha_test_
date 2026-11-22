@@ -99,9 +99,9 @@ def main():
 
     input_paths = {args.svm.resolve(), args.roberta.resolve()}
     output_paths = [
-        path.resolve()
-        for path in (args.json_out, args.errors_out)
-        if path is not None
+        output.resolve()
+        for output in (args.json_out, args.errors_out)
+        if output is not None
     ]
     if len(set(output_paths)) != len(output_paths) or any(
         output_path in input_paths for output_path in output_paths
