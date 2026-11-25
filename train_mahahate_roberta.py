@@ -103,6 +103,16 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
+    for name in ("epochs", "batch_size", "grad_accum", "max_length", "patience"):
+        if getattr(args, name) < 1:
+            parser.error(f"--{name.replace('_', '-')} must be at least 1.")
+    if not np.isfinite(args.lr) or args.lr <= 0:
+        parser.error("--lr must be a finite number greater than zero.")
+    if not np.isfinite(args.weight_decay) or args.weight_decay < 0:
+        parser.error("--weight-decay must be a finite number greater than or equal to zero.")
+    if args.seed < 0:
+        parser.error("--seed must be a non-negative integer.")
+
     data_dir = Path(args.data_dir)
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
