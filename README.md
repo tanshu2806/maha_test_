@@ -50,6 +50,7 @@ TE_training_data_prep/
 ├── requirements.txt                              # Lightweight baseline and analysis dependencies
 ├── requirements-roberta.txt                      # Optional transformer training dependencies
 ├── compare_predictions.py                        # Aggregate SVM/RoBERTa comparison and error analysis
+├── training_data.py                              # Shared CSV validation and row-filtering diagnostics
 ├── audit_splits.py                               # Aggregate duplicate-overlap audit across splits
 ├── dataset_split_summary.json                     # JSON record of split sizes, percentages, and class distributions
 │
@@ -239,6 +240,8 @@ Available arguments:
 - `--outdir`: Directory to store models, predictions, and reports (default: `svm_baseline_results`).
 - `--c-values`: Comma-separated float regularization strengths.
 
+The SVM and RoBERTa trainers use the same split loader. It trims CSV header whitespace, rejects duplicate headers after trimming, and prints source row counts, rows used, blank-text counts, and unsupported-label counts for each split. Blank-text and unsupported-label counts can overlap.
+
 ### Fine-Tuning MahaHate RoBERTa
 To train and evaluate the transformer model:
 ```powershell
@@ -253,7 +256,7 @@ python train_mahahate_roberta.py `
   --patience 2
 ```
 
-Outputs are automatically saved to `mahahate_roberta_results/`, including the serialized best checkpoint under `best_model/`.
+Outputs are automatically saved to `mahahate_roberta_results/`, including the serialized best checkpoint under `best_model/`. The checkpoint stores the canonical `HATE`, `OFFN`, `PRFN`, and `NOT` class mapping; the local prediction tool checks that order before using it. Invalid numeric options such as zero epochs, batch size, or gradient accumulation are rejected before training.
 
 ### Compare Saved Predictions & Inspect Errors
 
