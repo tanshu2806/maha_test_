@@ -21,6 +21,7 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, get_linear_schedule_with_warmup
 
 from experiment_provenance import build_experiment_provenance
+from training_data import read_labeled_split
 
 MODEL_NAME = "l3cube-pune/mahahate-multi-roberta"
 LABELS = ["HATE", "OFFN", "PRFN", "NOT"]
@@ -63,20 +64,8 @@ def collate_batch(items, tokenizer):
     return batch
 
 
-def load_split(path):
-    df = pd.read_csv(path)
-    required = {"comment_text", "final_category"}
-    missing = required - set(df.columns)
-    if missing:
-        raise ValueError(f"{path} is missing required columns: {sorted(missing)}")
-    df = df.dropna(subset=["comment_text", "final_category"]).copy()
-    df["comment_text"] = df["comment_text"].astype(str).str.strip()
-    df["final_category"] = df["final_category"].astype(str).str.strip().str.upper()
-    df = df[(df["comment_text"] != "") & df["final_category"].isin(LABEL2ID)].reset_index(drop=True)
-    if df.empty:
-        raise ValueError(f"No valid labelled rows found in {path}")
-    return df
-
+def load_split(path, split_name):
+    return read_labeled_split(path, split_name, LABELS)
 
 def evaluate(model, loader, device, use_amp):
     model.eval()
@@ -135,9 +124,9 @@ def main():
     print(f"Batch size  : {args.batch_size} x grad accumulation {args.grad_accum}")
     print(f"Max length  : {args.max_length}")
 
-    train_df = load_split(data_dir / "train.csv")
-    val_df = load_split(data_dir / "validation.csv")
-    test_df = load_split(data_dir / "test.csv")
+    train_df = load_split(data_dir / "train.csv", "training")
+    val_df = load_split(data_dir / "validation.csv", "validation")
+    test_df = load_split(data_dir / "test.csv", "test")
     print(f"Train rows  : {len(train_df):,}")
     print(f"Val rows    : {len(val_df):,}")
     print(f"Test rows   : {len(test_df):,}")

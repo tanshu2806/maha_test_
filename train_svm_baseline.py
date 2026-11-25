@@ -33,6 +33,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.svm import LinearSVC
 from experiment_provenance import build_experiment_provenance
+from training_data import read_labeled_split
 
 from sklearn.metrics import (
     accuracy_score,
@@ -46,34 +47,7 @@ LABELS = ["NOT", "PRFN", "OFFN", "HATE"]
 
 
 def read_split(path: Path, split_name: str) -> pd.DataFrame:
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Could not find {split_name} file: {path}\n"
-            "Pass the correct paths using --train, --validation, and --test."
-        )
-
-    df = pd.read_csv(path, encoding="utf-8-sig", keep_default_na=False)
-    df.columns = [str(c).strip() for c in df.columns]
-    required = {"comment_text", "final_category"}
-    missing = required - set(df.columns)
-    if missing:
-        raise ValueError(
-            f"{split_name} is missing columns {sorted(missing)}. "
-            f"Found: {df.columns.tolist()}"
-        )
-
-    df["comment_text"] = df["comment_text"].astype(str)
-    df["final_category"] = df["final_category"].astype(str).str.strip().str.upper()
-    df = df[df["final_category"].isin(LABELS)].copy()
-    df = df[df["comment_text"].str.strip().ne("")].copy()
-
-    if df.empty:
-        raise ValueError(f"No usable labelled rows found in {split_name}: {path}")
-    missing_classes = set(LABELS) - set(df["final_category"].unique())
-    if missing_classes:
-        print(f"[WARNING] {split_name} has no examples for: {sorted(missing_classes)}")
-    return df
-
+    return read_labeled_split(path, split_name, LABELS)
 
 def make_pipeline(c_value: float) -> Pipeline:
     features = FeatureUnion(
