@@ -40,12 +40,36 @@ def load_roberta(model_path, device_name):
     )
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(model_path).to(device)
+    aliases = {
+        "HATE": "HATE",
+        "OFFENSIVE": "OFFN",
+        "OFFN": "OFFN",
+        "PROFANE": "PRFN",
+        "PRFN": "PRFN",
+        "NONE": "NOT",
+        "NOT": "NOT",
+        "NON-OFFENSIVE": "NOT",
+    }
+    configured_labels = model.config.id2label or {}
+    model_labels = []
+    for class_id in range(model.config.num_labels):
+        raw_label = configured_labels.get(class_id, configured_labels.get(str(class_id)))
+        canonical = aliases.get(str(raw_label).strip().upper()) if raw_label is not None else None
+        if canonical is None:
+            raise ValueError(
+                f"RoBERTa checkpoint has an unsupported label at class id {class_id}: {raw_label!r}"
+            )
+        model_labels.append(canonical)
+    if model_labels != LABELS:
+        raise ValueError(
+            f"RoBERTa checkpoint label order is {model_labels}, expected {LABELS}."
+        )
     model.eval()
-    return torch, tokenizer, model, device
+    return torch, tokenizer, model, device, model_labels
 
 
 def predict_roberta(components, texts):
-    torch, tokenizer, model, device = components
+    torch, tokenizer, model, device, model_labels = components
     encoded = tokenizer(
         texts, return_tensors="pt", truncation=True, max_length=128, padding=True
     )
@@ -54,7 +78,7 @@ def predict_roberta(components, texts):
         predicted_ids = model(**encoded).logits.argmax(dim=-1).tolist()
     if any(predicted_id < 0 or predicted_id >= len(LABELS) for predicted_id in predicted_ids):
         raise ValueError("Model returned an unexpected class id.")
-    return [LABELS[predicted_id] for predicted_id in predicted_ids]
+    return [model_labels[predicted_id] for predicted_id in predicted_ids]
 
 
 def build_predictors(args):

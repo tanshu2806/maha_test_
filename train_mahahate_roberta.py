@@ -134,7 +134,13 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
-    # Preserve the pretrained four-class head's semantic ordering.
+    if model.config.num_labels != len(LABELS):
+        raise ValueError(
+            f"Expected a {len(LABELS)}-class checkpoint, found {model.config.num_labels} labels."
+        )
+    # Persist the dataset's canonical names for downstream inference without changing head order.
+    model.config.id2label = ID2LABEL
+    model.config.label2id = LABEL2ID
     model.to(device)
 
     collate = lambda items: collate_batch(items, tokenizer)
